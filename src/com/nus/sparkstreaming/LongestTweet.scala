@@ -48,24 +48,26 @@ object LongestTweet {
     // you to safely and efficiently keep track of global state with key/value pairs.
     // We'll do that later in the course.
     
+    // what is the largest tweet?
     lengths.foreachRDD((rdd, time) => {
       
       var count = rdd.count()
-      if (count > 0) {               
+      if (count > 0) {
+        totalTweets.getAndAdd(count)
         
-        val repartition = rdd.repartition(1).cache()        
-        rddMaxVal.set(repartition.max())       
-                
-        println("Longest tweet in RDD " + rddMaxVal.get())       
-        
-        //Longest Tweet encountered since the beginning of time 
-        println("Before: Longest Tweet Seen:" + longestTweetSeen.get())
-        if (rddMaxVal.get() >= longestTweetSeen.get()) {
+        totalChars.getAndAdd(rdd.reduce((x,y) => x + y))
+        // we have to repartition to get the rdd in one chunk
+        val repartition = rdd.repartition(1).cache()
+        rddMaxVal.set(repartition.max())
+        if (rddMaxVal.get() > longestTweetSeen.get()) {
           longestTweetSeen.set(rddMaxVal.get())
-          println("Inside: Longest Tweet Seen:" + longestTweetSeen.get())          
-        }             
-      println("After: Longest tweet seen so far: " + longestTweetSeen.get())
-      println("--------------------------------")
+        }
+        
+        println("Total tweets: " + totalTweets.get() + 
+            " Total characters: " + totalChars.get() + 
+            " Average: " + totalChars.get() / totalTweets.get() +
+            " Max seen: " + longestTweetSeen.get() 
+        )
       }
     })
     
